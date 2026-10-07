@@ -4,14 +4,14 @@ Proiect individual la disciplina Metode avansate de programare, anul universitar
 
 ## Autor
 
-- **Nume:** [Nume Prenume]
-- **Grupa:** [grupa]
-- **Marca:** [marca]
-- **Tema:** [numarul temei] - [titlul temei]
+- **Nume:** Tufis Anne Marie
+- **Grupa:** 2.2
+- **Marca:** 715715
+- **Tema:** 3 - catalog de note
 
 ## Descriere
 
-[Doua-trei propozitii despre ce face aplicatia si ce problema rezolva.]
+Proiectul constă în dezvoltarea unui serviciu web care digitalizează operațiunile clasice ale unui catalog școlar.  Scopul principal al aplicației este de a menține evidența studenților, a notelor obținute de aceștia și de a calcula automat situațiile școlare pe baza datelor introduse.
 
 ## Tehnologii
 
