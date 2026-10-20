@@ -35,7 +35,7 @@ curl http://localhost:8080/version
 
 ```
 cmake -B build -DBUILD_TESTS=ON
-cmake --build build -j
+cmake --build build -j 
 ./build/tests
 ```
 
