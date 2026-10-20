@@ -42,4 +42,4 @@ jobs:
           tags: ghcr.io/annemarietufis7/map-proiect:latest
           build-args: |
             COMMIT=${{ github.sha }}
-            # BUILT_AT=${{ github.event.repository.updated_at }}
+           
