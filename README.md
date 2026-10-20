@@ -1,3 +1,4 @@
+[![CI](https://github.com/AnneMarieTufis7/map-proiect/actions/workflows/ci.yml/badge.svg)](https://github.com/AnneMarieTufis7/map-proiect/actions/workflows/ci.yml)
 # [Titlul proiectului]
 
 Proiect individual la disciplina Metode avansate de programare, anul universitar 2026-2027.
