@@ -2,15 +2,16 @@
 // Pure logic lives here so it can be unit tested without starting a server.
 #pragma once
 
-
-#include <algorithm>
-#include <numeric>
 #include <chrono>
 #include <cstdlib>
 #include <mutex>
 #include <string>
 #include <map>
 #include <vector>
+#include <algorithm>
+#include <numeric>
+#include <cmath>
+#include <optional>
 
 #include <nlohmann/json.hpp>
 
@@ -25,14 +26,14 @@ inline std::string Env(const char* key, const std::string& fallback) {
     return (value == nullptr || *value == '\0') ? fallback : std::string(value);
 }
 
-// Structurile de date pentru Tema 3: Catalog de note
+
 struct Student {
     int id;
     std::string name;
     std::string group;
 };
 
-// Macro nlohmann/json pentru a serializa automat structura Student
+// Serializare automată JSON pentru structura Student
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Student, id, name, group)
 
 struct Grade {
@@ -41,24 +42,32 @@ struct Grade {
     int grade;
 };
 
-/// Holds the application data in memory.
+// Serializare automată JSON pentru structura Grade
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Grade, student_id, subject, grade)
+
 class Store {
 public:
     void Reset() {
         std::lock_guard<std::mutex> guard(mutex_);
-        // Numerotarea reîncepe obligatoriu de la 1 la apelarea rutei /reset
-        next_student_id_ = 1;
-        // Golește toate datele din memorie[cite: 32]
+
+        next_id_ = 1;
+        // Golește complet datele din memorie
         students_.clear();
         grades_.clear();
     }
 
-    int TakeNextStudentId() {
+    // Funcțiile originale PĂSTRATE pentru a nu crăpa testele din șablon
+    int NextId() {
         std::lock_guard<std::mutex> guard(mutex_);
-        return next_student_id_++;
+        return next_id_;
     }
 
-    // Funcții ajutătoare pentru manipularea datelor în memorie
+    int TakeNextId() {
+        std::lock_guard<std::mutex> guard(mutex_);
+        return next_id_++;
+    }
+
+
     void AddStudent(const Student& student) {
         std::lock_guard<std::mutex> guard(mutex_);
         students_[student.id] = student;
@@ -67,6 +76,20 @@ public:
     bool StudentExists(int id) {
         std::lock_guard<std::mutex> guard(mutex_);
         return students_.find(id) != students_.end();
+    }
+
+    std::vector<Student> GetAllStudentsOrderedByName() {
+        std::lock_guard<std::mutex> guard(mutex_);
+        std::vector<Student> result;
+        for (const auto& pair : students_) {
+            result.push_back(pair.second);
+        }
+        // Ordonare alfabetică după nume, conform cerinței
+        std::sort(result.begin(), result.end(), [](const Student& a, const Student& b) {
+            if (a.name == b.name) return a.id < b.id; // Departajare generală după id
+            return a.name < b.name;
+        });
+        return result;
     }
 
     void AddGrade(const Grade& grade) {
@@ -86,31 +109,39 @@ public:
         return count;
     }
 
-    // Getter pentru teste / rute
-    std::map<int, Student> GetAllStudents() {
+    // Returnează notele unui student
+    std::vector<Grade> GetStudentGrades(int student_id) {
         std::lock_guard<std::mutex> guard(mutex_);
-        return students_;
-    }
-
-    std::vector<Grade> GetGradesForStudent(int student_id) {
-        std::lock_guard<std::mutex> guard(mutex_);
-        std::vector<Grade> student_grades;
+        std::vector<Grade> result;
         for (const auto& g : grades_) {
             if (g.student_id == student_id) {
-                student_grades.push_back(g);
+                result.push_back(g);
             }
         }
-        return student_grades;
+        return result;
+    }
+
+    // Extrage toate notele dintr-o materie anume (pentru raportul global)
+    std::vector<int> GetGradesForReport(const std::string& subject) {
+        std::lock_guard<std::mutex> guard(mutex_);
+        std::vector<int> result;
+        for (const auto& g : grades_) {
+            if (g.subject == subject) {
+                result.push_back(g.grade);
+            }
+        }
+        return result;
     }
 
 private:
     std::mutex mutex_;
-    int next_student_id_ = 1;
+    int next_id_ = 1;
     
-    // Containerele propriu-zise pentru stocarea datelor
+    // Containerele pentru date
     std::map<int, Student> students_;
     std::vector<Grade> grades_;
 };
+
 
 /// Seconds since the process started.
 inline long UptimeSeconds(std::chrono::steady_clock::time_point started_at) {
@@ -135,13 +166,18 @@ inline nlohmann::json ErrorBody(const std::string& code, const std::string& mess
     return {{"error", code}, {"message", message}};
 }
 
+// Functie globală matematică pentru rotunjire la 2 zecimale (jumătate în sus)
+inline double RoundToTwoDecimals(double value) {
+    return std::round(value * 100.0) / 100.0;
+}
+
 inline std::string HomePage() {
     return std::string(R"(<!DOCTYPE html>
 <html lang="ro"><head><meta charset="utf-8"><title>)") + kAppName + R"(</title></head>
 <body>
 <h1>)" + kAppName + R"(</h1>
-<p>Autor: Tufiș Anne-Marie, grupa 2.2</p> 
-<p>Tema: 3 (Catalog de note)</p>
+<p>Autor: Tufiș Anne-Marie, grupa 2.2</p>
+<p>Tema: 3</p>
 <p>Versiune: )" + kAppVersion + ", commit " + Env("APP_COMMIT", "dev") + R"(</p>
 </body></html>)";
 }
