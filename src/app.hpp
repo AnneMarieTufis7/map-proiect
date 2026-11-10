@@ -26,7 +26,6 @@ inline std::string Env(const char* key, const std::string& fallback) {
     return (value == nullptr || *value == '\0') ? fallback : std::string(value);
 }
 
-
 struct Student {
     int id;
     std::string name;
@@ -49,7 +48,6 @@ class Store {
 public:
     void Reset() {
         std::lock_guard<std::mutex> guard(mutex_);
-
         next_id_ = 1;
         // Golește complet datele din memorie
         students_.clear();
@@ -66,7 +64,6 @@ public:
         std::lock_guard<std::mutex> guard(mutex_);
         return next_id_++;
     }
-
 
     void AddStudent(const Student& student) {
         std::lock_guard<std::mutex> guard(mutex_);
@@ -109,6 +106,23 @@ public:
         return count;
     }
 
+    // Calculează media generală a unui student (sau std::nullopt dacă nu are note)
+    std::optional<double> CalculateStudentAverage(int student_id) {
+        std::lock_guard<std::mutex> guard(mutex_);
+        double sum = 0;
+        int count = 0;
+        for (const auto& g : grades_) {
+            if (g.student_id == student_id) {
+                sum += g.grade;
+                count++;
+            }
+        }
+        if (count == 0) {
+            return std::nullopt; // Cerință: average pentru un student fără note este null, nu 0[cite: 15]
+        }
+        return RoundToTwoDecimals(sum / count);
+    }
+
     // Returnează notele unui student
     std::vector<Grade> GetStudentGrades(int student_id) {
         std::lock_guard<std::mutex> guard(mutex_);
@@ -142,7 +156,6 @@ private:
     std::vector<Grade> grades_;
 };
 
-
 /// Seconds since the process started.
 inline long UptimeSeconds(std::chrono::steady_clock::time_point started_at) {
     const auto elapsed = std::chrono::steady_clock::now() - started_at;
@@ -166,7 +179,7 @@ inline nlohmann::json ErrorBody(const std::string& code, const std::string& mess
     return {{"error", code}, {"message", message}};
 }
 
-// Functie globală matematică pentru rotunjire la 2 zecimale (jumătate în sus)
+// Funcție globală matematică pentru rotunjire la 2 zecimale (jumătate în sus)
 inline double RoundToTwoDecimals(double value) {
     return std::round(value * 100.0) / 100.0;
 }
@@ -183,4 +196,3 @@ inline std::string HomePage() {
 }
 
 }  // namespace map_project
-
