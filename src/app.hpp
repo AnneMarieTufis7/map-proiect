@@ -44,17 +44,20 @@ struct Grade {
 // Serializare automată JSON pentru structura Grade
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Grade, student_id, subject, grade)
 
+// Funcție globală matematică pentru rotunjire la 2 zecimale (mutată deasupra clasei Store)
+inline double RoundToTwoDecimals(double value) {
+    return std::round(value * 100.0) / 100.0;
+}
+
 class Store {
 public:
     void Reset() {
         std::lock_guard<std::mutex> guard(mutex_);
         next_id_ = 1;
-        // Golește complet datele din memorie
         students_.clear();
         grades_.clear();
     }
 
-    // Funcțiile originale PĂSTRATE pentru a nu crăpa testele din șablon
     int NextId() {
         std::lock_guard<std::mutex> guard(mutex_);
         return next_id_;
@@ -81,9 +84,8 @@ public:
         for (const auto& pair : students_) {
             result.push_back(pair.second);
         }
-        // Ordonare alfabetică după nume, conform cerinței
         std::sort(result.begin(), result.end(), [](const Student& a, const Student& b) {
-            if (a.name == b.name) return a.id < b.id; // Departajare generală după id
+            if (a.name == b.name) return a.id < b.id;
             return a.name < b.name;
         });
         return result;
@@ -94,7 +96,6 @@ public:
         grades_.push_back(grade);
     }
 
-    // Funcție pentru a verifica regula: max K=5 note la aceeași materie
     int CountGradesForSubject(int student_id, const std::string& subject) {
         std::lock_guard<std::mutex> guard(mutex_);
         int count = 0;
@@ -106,7 +107,6 @@ public:
         return count;
     }
 
-    // Calculează media generală a unui student (sau std::nullopt dacă nu are note)
     std::optional<double> CalculateStudentAverage(int student_id) {
         std::lock_guard<std::mutex> guard(mutex_);
         double sum = 0;
@@ -118,12 +118,11 @@ public:
             }
         }
         if (count == 0) {
-            return std::nullopt; // Cerință: average pentru un student fără note este null, nu 0[cite: 15]
+            return std::nullopt;
         }
         return RoundToTwoDecimals(sum / count);
     }
 
-    // Returnează notele unui student
     std::vector<Grade> GetStudentGrades(int student_id) {
         std::lock_guard<std::mutex> guard(mutex_);
         std::vector<Grade> result;
@@ -135,7 +134,6 @@ public:
         return result;
     }
 
-    // Extrage toate notele dintr-o materie anume (pentru raportul global)
     std::vector<int> GetGradesForReport(const std::string& subject) {
         std::lock_guard<std::mutex> guard(mutex_);
         std::vector<int> result;
@@ -150,13 +148,10 @@ public:
 private:
     std::mutex mutex_;
     int next_id_ = 1;
-    
-    // Containerele pentru date
     std::map<int, Student> students_;
     std::vector<Grade> grades_;
 };
 
-/// Seconds since the process started.
 inline long UptimeSeconds(std::chrono::steady_clock::time_point started_at) {
     const auto elapsed = std::chrono::steady_clock::now() - started_at;
     return std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
@@ -177,11 +172,6 @@ inline nlohmann::json VersionBody() {
 
 inline nlohmann::json ErrorBody(const std::string& code, const std::string& message) {
     return {{"error", code}, {"message", message}};
-}
-
-// Funcție globală matematică pentru rotunjire la 2 zecimale (jumătate în sus)
-inline double RoundToTwoDecimals(double value) {
-    return std::round(value * 100.0) / 100.0;
 }
 
 inline std::string HomePage() {
